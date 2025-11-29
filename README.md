@@ -64,6 +64,8 @@ npm run dev    # default: http://127.0.0.1:5173
 The app expects the backend at `http://127.0.0.1:8000` (configure `API_BASE` in `src/App.jsx`
 if needed). Build with `npm run build`.
 
+Click on "new project" to start a new chat.
+
 ## Development Notes
 
 - The SQLite file lives at the repository root; delete it to reset local data.
