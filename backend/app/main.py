@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware  # Import CORS
 from sqlmodel import Session, select
 from .db import init_db, engine, get_session
-from .models import User, Project, ChatSession, Message
+from .models import User, Project, ChatSession, Message, AgentRole
 from .crud import create_project, create_chat, add_message, get_chat, get_messages_for_chat, get_projects
 from .agents import run_agent_sequence
 import uvicorn
@@ -88,11 +88,17 @@ def api_send_message(chat_id: int, data: dict, session: Session = Depends(get_se
     if not chat:
         raise HTTPException(404, "Chat session not found")
 
+    # Get the next sequence number
+    existing_messages = get_messages_for_chat(session, chat_id)
+    next_sequence = max([m.sequence for m in existing_messages], default=0) + 1
+
     # save user message
     user_msg = Message(
-        chat_session_id=chat_id,
-        agent_role="user",
-        content=data["content"]
+        chat_id=chat_id,
+        agent_role=AgentRole.USER,
+        content=data["content"],
+        sequence=next_sequence,
+        sender_id=data.get("user_id")
     )
     add_message(session, user_msg)
 

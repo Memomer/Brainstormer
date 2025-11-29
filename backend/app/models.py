@@ -6,6 +6,7 @@ from sqlmodel import SQLModel, Field, Relationship
 
 
 class AgentRole(str, Enum):
+    USER = "user"
     OPTIMIST = "optimist"
     PESSIMIST = "pessimist"
     PLANNER = "planner"

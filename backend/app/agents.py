@@ -5,7 +5,7 @@ from typing import Dict, Optional
 from openai import OpenAI
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from .crud import add_message
 from .models import AgentRole, ChatSession, Message
@@ -47,8 +47,13 @@ def run_agent_sequence(
     session: Session, chat: ChatSession, idea: str, user_id: Optional[int] = None
 ) -> Dict[str, str]:
     """Run all agents synchronously, persisting each output."""
+    # Get the next sequence number (start after existing messages)
+    # This ensures agent messages appear after any user messages that were just added
+    from .models import Message
+    existing_messages = session.exec(select(Message).where(Message.chat_id == chat.chat_id).order_by(Message.sequence)).all()
+    sequence = max([m.sequence for m in existing_messages], default=0) + 1
+    
     outputs: Dict[str, str] = {}
-    sequence = 1
 
     steps = [
         (
