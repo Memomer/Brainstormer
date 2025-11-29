@@ -91,7 +91,22 @@ export default function App() {
     try {
       const res = await fetch(`${API_BASE}/chats/${chatId}/messages`);
       const data = await res.json();
-      setMessages(data);
+      // Sort messages by sequence to ensure chronological order (not grouped by role)
+      // This ensures user and agent messages appear interleaved in the order they were created
+      const sortedMessages = [...data].sort((a, b) => {
+        // Primary sort: sequence number (lower = earlier)
+        const seqA = a.sequence ?? 999999;
+        const seqB = b.sequence ?? 999999;
+        if (seqA !== seqB) {
+          return seqA - seqB;
+        }
+        // Fallback: timestamp if sequence is equal or missing
+        if (a.timestamp && b.timestamp) {
+          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+        }
+        return 0;
+      });
+      setMessages(sortedMessages);
     } catch (err) {
       console.error(err);
     } finally {
@@ -145,16 +160,7 @@ export default function App() {
         setActiveChat({ chat_id: data.chat_id, idea: content, title: data.title });
         await fetchMessages(data.chat_id);
       } else {
-        // Continue Chat
-        // Optimistic update
-        const tempMsg = { 
-          id: Date.now(), 
-          role: 'user', 
-          content: content, 
-          timestamp: new Date().toISOString() 
-        };
-        setMessages(prev => [...prev, tempMsg]);
-
+        // Continue Chat - send message and let backend handle sequencing
         res = await fetch(`${API_BASE}/chats/${activeChat.chat_id}/message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -163,6 +169,7 @@ export default function App() {
             user_id: "user_ui_1"
           })
         });
+        // Re-fetch all messages to get them in correct chronological order
         await fetchMessages(activeChat.chat_id);
       }
     } catch (err) {
@@ -329,7 +336,7 @@ export default function App() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
           {!activeProject ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400">
                <Layout size={64} className="mb-4 opacity-20" />
@@ -347,34 +354,38 @@ export default function App() {
                <p>No messages yet.</p>
              </div>
           ) : (
-            messages.map((msg, idx) => {
-              const isUser = msg.role === 'user';
-              return (
-                <div 
-                  key={idx} 
-                  className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`flex max-w-3xl ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`}>
-                    <AgentAvatar role={msg.role} />
-                    
-                    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">{msg.role}</span>
-                        <span className="text-[10px] text-gray-400">{new Date(msg.timestamp).toLocaleTimeString()}</span>
-                      </div>
+            <div className="flex flex-col space-y-4">
+              {messages.map((msg, idx) => {
+                const isUser = msg.role === 'user';
+                return (
+                  <div 
+                    key={msg.id || idx} 
+                    className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
+                  >
+                    <div className={`flex max-w-3xl ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`}>
+                      <AgentAvatar role={msg.role} />
                       
-                      <div className={`px-5 py-3 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
-                        isUser 
-                          ? 'bg-blue-600 text-white rounded-tr-none' 
-                          : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
-                      }`}>
-                        {msg.content}
+                      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">{msg.role}</span>
+                          <span className="text-[10px] text-gray-400">
+                            {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}
+                          </span>
+                        </div>
+                        
+                        <div className={`px-5 py-3 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
+                          isUser 
+                            ? 'bg-blue-600 text-white rounded-tr-none' 
+                            : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
+                        }`}>
+                          {msg.content}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
           
           {isLoading && (
