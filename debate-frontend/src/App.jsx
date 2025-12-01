@@ -19,11 +19,11 @@ const API_BASE = "http://127.0.0.1:8000";
 const AgentAvatar = ({ role }) => {
   const getColors = (r) => {
     const roleLower = r.toLowerCase();
-    if (roleLower === 'user') return 'bg-blue-600 text-white';
-    if (roleLower.includes('critic')) return 'bg-red-500 text-white';
-    if (roleLower.includes('planner') || roleLower.includes('architect')) return 'bg-purple-600 text-white';
-    if (roleLower.includes('coder') || roleLower.includes('developer')) return 'bg-emerald-600 text-white';
-    return 'bg-gray-700 text-white';
+    if (roleLower === 'user') return 'bg-emerald-600 text-white';
+    if (roleLower.includes('critic')) return 'bg-rose-600 text-white';
+    if (roleLower.includes('planner') || roleLower.includes('architect')) return 'bg-violet-500 text-white';
+    if (roleLower.includes('coder') || roleLower.includes('developer')) return 'bg-cyan-600 text-white';
+    return 'bg-slate-700 text-white';
   };
 
   const getIcon = (r) => {
@@ -33,7 +33,7 @@ const AgentAvatar = ({ role }) => {
   };
 
   return (
-    <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm shrink-0 ${getColors(role)}`}>
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md shrink-0 ${getColors(role)}`}>
       {getIcon(role)}
     </div>
   );
@@ -201,26 +201,56 @@ export default function App() {
     }
   }, [activeChat]);
 
+  // --- Internal Reusable Input Component ---
+  const InputArea = ({ centered }) => (
+    <div className={`${centered ? "w-full max-w-2xl mt-8" : "max-w-4xl mx-auto"} relative flex items-end gap-2 bg-gray-800 border border-gray-700 rounded-xl p-2 transition-all shadow-sm`}>
+      <textarea
+        value={inputText}
+        onChange={(e) => setInputText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+          }
+        }}
+        placeholder={!activeChat ? "Describe your idea to start the brainstorming..." : "Reply to the agents..."}
+        className="w-full bg-transparent border-none focus:outline-none focus:ring-0 resize-none max-h-32 min-h-[44px] py-2.5 px-2 text-slate-200 placeholder-slate-400 text-sm"
+        rows={1}
+        autoFocus={centered}
+      />
+      <button
+        onClick={handleSendMessage}
+        disabled={isLoading || !inputText.trim()}
+        className={`p-2.5 rounded-lg mb-0.5 shrink-0 transition-all ${
+          isLoading || !inputText.trim() 
+            ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+            : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-900/30 hover:shadow-lg'
+        }`}
+      >
+        {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+      </button>
+    </div>
+  );
 
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
+    <div className="flex h-screen bg-gray-900 text-slate-200 font-sans overflow-hidden">
       
       {/* --- Sidebar (Projects & Chats) --- */}
-      <div className="w-72 bg-gray-900 text-gray-300 flex flex-col border-r border-gray-800">
+      <div className="w-72 bg-gray-950 text-slate-400 flex flex-col border-r border-gray-800">
         
         {/* Header */}
         <div className="p-4 border-b border-gray-800 flex items-center space-x-2">
-          <Layers className="text-indigo-500" />
-          <h1 className="font-bold text-white tracking-wide">Brainstorming Engine</h1>
+          <img src="/favicon.png" alt="Logo" className="w-6 h-6 object-contain" />
+          <h1 className="font-bold text-slate-100 tracking-wide">Brainstormer</h1>
         </div>
 
         {/* Projects Section */}
         <div className="p-4 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Projects</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Projects</h2>
             <button 
               onClick={() => setIsCreatingProject(!isCreatingProject)}
-              className="hover:text-white transition-colors"
+              className="hover:text-emerald-400 transition-colors"
             >
               <Plus size={16} />
             </button>
@@ -232,7 +262,7 @@ export default function App() {
                 autoFocus
                 type="text" 
                 placeholder="Project Name..." 
-                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()}
@@ -242,7 +272,7 @@ export default function App() {
 
           <div className="space-y-1 max-h-40 overflow-y-auto scrollbar-hide">
             {projects.length === 0 && !isCreatingProject && (
-              <div className="text-sm text-gray-600 italic">No projects yet.</div>
+              <div className="text-sm text-slate-500 italic">No projects yet.</div>
             )}
             {projects.map(p => (
               <button
@@ -250,8 +280,8 @@ export default function App() {
                 onClick={() => setActiveProject(p)}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm flex items-center space-x-2 transition-all ${
                   activeProject?.project_id === p.project_id 
-                    ? 'bg-indigo-600 text-white shadow-lg' 
-                    : 'hover:bg-gray-800'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/50' 
+                    : 'hover:bg-gray-800 text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <FolderOpen size={14} />
@@ -267,13 +297,13 @@ export default function App() {
         {/* Chats Section */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               {activeProject ? 'Sessions' : ''}
             </h2>
             {activeProject && (
               <button 
                 onClick={() => { setActiveChat(null); setMessages([]); }}
-                className="text-xs bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-gray-300 transition-colors"
+                className="text-xs bg-gray-900 border border-gray-800 hover:bg-gray-800 px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition-colors"
               >
                 New
               </button>
@@ -282,9 +312,9 @@ export default function App() {
 
           <div className="space-y-1">
             {!activeProject ? (
-              <div className="text-sm text-gray-600 mt-4 text-center">Select a project to view sessions</div>
+              <div className="text-sm text-slate-500 mt-4 text-center">Select a project to view sessions</div>
             ) : chats.length === 0 ? (
-              <div className="text-sm text-gray-600 italic">No sessions found.</div>
+              <div className="text-sm text-slate-500 italic">No sessions found.</div>
             ) : (
               chats.map(c => (
                 <button
@@ -292,14 +322,14 @@ export default function App() {
                   onClick={() => setActiveChat(c)}
                   className={`w-full text-left px-3 py-3 rounded-md text-sm flex items-start space-x-3 transition-all ${
                     activeChat?.chat_id === c.chat_id 
-                      ? 'bg-gray-800 text-white border-l-2 border-indigo-500' 
-                      : 'hover:bg-gray-800/50 text-gray-400'
+                      ? 'bg-gray-800 text-slate-100 border border-gray-700 shadow-sm' 
+                      : 'hover:bg-gray-900 text-slate-500 hover:text-slate-300'
                   }`}
                 >
-                  <MessageSquare size={16} className="mt-0.5 shrink-0" />
+                  <MessageSquare size={16} className={`mt-0.5 shrink-0 ${activeChat?.chat_id === c.chat_id ? 'text-emerald-500' : ''}`} />
                   <div className="overflow-hidden">
                     <p className="font-medium truncate">{c.title || "Untitled Session"}</p>
-                    <p className="text-xs text-gray-500 truncate">{c.idea}</p>
+                    <p className="text-xs text-slate-500 truncate">{c.idea}</p>
                   </div>
                 </button>
               ))
@@ -308,27 +338,27 @@ export default function App() {
         </div>
         
         {/* Footer Status */}
-        <div className="p-3 bg-gray-950 text-xs text-gray-600 flex items-center justify-between">
-           <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Online</span>
-           <span>v1.0</span>
+        <div className="p-3 bg-gray-950 text-xs text-slate-600 border-t border-gray-900 flex items-center justify-between">
+           <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-900"></div> Online</span>
+           <span>v1.1</span>
         </div>
       </div>
 
       {/* --- Main Content --- */}
-      <div className="flex-1 flex flex-col bg-white relative">
+      <div className="flex-1 flex flex-col bg-gray-900 relative">
         
         {/* Top Header */}
-        <div className="h-16 border-b flex items-center px-6 justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+        <div className="h-16 border-b border-gray-800 flex items-center px-6 justify-between bg-gray-900/80 backdrop-blur-md sticky top-0 z-10">
           <div>
-            <h2 className="text-lg font-bold text-gray-800">
+            <h2 className="text-lg font-bold text-slate-100">
               {activeChat ? (activeChat.title || "Brainstorming Session") : (activeProject ? activeProject.name : "Dashboard")}
             </h2>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               {activeChat ? `ID: ${activeChat.chat_id} • Multi-Agent Enabled` : "Select or create a chat to begin"}
             </p>
           </div>
           {activeChat && (
-             <div className="flex items-center space-x-2 text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+             <div className="flex items-center space-x-2 text-xs font-medium text-emerald-300 bg-emerald-900/20 px-3 py-1 rounded-full border border-emerald-900/50">
                 <Cpu size={14} />
                 <span>Agents Active</span>
              </div>
@@ -336,21 +366,32 @@ export default function App() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+        <div className="flex-1 overflow-y-auto p-6 bg-gray-900">
           {!activeProject ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400">
+            <div className="h-full flex flex-col items-center justify-center text-slate-600">
                <Layout size={64} className="mb-4 opacity-20" />
-               <p className="text-lg font-medium text-gray-500">No Project Selected</p>
+               <p className="text-lg font-medium text-slate-400">No Project Selected</p>
                <p className="text-sm">Choose a project from the sidebar to get started.</p>
             </div>
           ) : !activeChat ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400">
-              <Terminal size={64} className="mb-4 opacity-20" />
-              <p className="text-lg font-medium text-gray-500">Ready to Brainstorm?</p>
-              <p className="text-sm mb-6">Enter an idea below to initialize the agent swarm.</p>
+            <div className="h-full flex flex-col items-center justify-center text-slate-600 pb-32">
+              {isLoading ? (
+                <>
+                  <Loader2 size={64} className="mb-4 text-emerald-500 animate-spin" />
+                  <p className="text-lg font-medium text-slate-300 animate-pulse">Brainstorming and debating...</p>
+                  <p className="text-sm text-slate-500 mt-2">Initializing agents...</p>
+                </>
+              ) : (
+                <>
+                  <Terminal size={80} className="mb-6 text-white" />
+                  <p className="text-3xl font-bold text-white mb-2">Ready to Brainstorm?</p>
+                  <p className="text-sm mb-6 text-slate-400">Enter an idea below to initialize the agent swarm.</p>
+                  <InputArea centered={true} />
+                </>
+              )}
             </div>
           ) : messages.length === 0 && !isLoading ? (
-             <div className="text-center py-10 text-gray-400">
+             <div className="text-center py-10 text-slate-600">
                <p>No messages yet.</p>
              </div>
           ) : (
@@ -367,16 +408,16 @@ export default function App() {
                       
                       <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
                         <div className="flex items-center space-x-2 mb-1">
-                          <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">{msg.role}</span>
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{msg.role}</span>
+                          <span className="text-[10px] text-slate-600">
                             {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}
                           </span>
                         </div>
                         
                         <div className={`px-5 py-3 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
                           isUser 
-                            ? 'bg-blue-600 text-white rounded-tr-none' 
-                            : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
+                            ? 'bg-emerald-600 text-white rounded-tr-none shadow-emerald-900/20' 
+                            : 'bg-gray-800 border border-gray-700 text-slate-200 rounded-tl-none'
                         }`}>
                           {msg.content}
                         </div>
@@ -391,44 +432,19 @@ export default function App() {
           {isLoading && (
             <div className="flex w-full justify-start animate-pulse">
                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-200"></div>
-                  <div className="bg-gray-200 h-10 w-32 rounded-xl rounded-tl-none"></div>
+                  <div className="w-8 h-8 rounded-full bg-gray-800"></div>
+                  <div className="bg-gray-800 h-10 w-32 rounded-xl rounded-tl-none border border-gray-700"></div>
                </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        {activeProject && (
-          <div className="p-4 bg-white border-t border-gray-200">
-            <div className="max-w-4xl mx-auto relative flex items-end gap-2 bg-gray-50 border border-gray-300 rounded-xl p-2 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all shadow-sm">
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                placeholder={!activeChat ? "Describe your idea to start the brainstorming..." : "Reply to the agents..."}
-                className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[44px] py-2.5 px-2 text-gray-700 placeholder-gray-400 text-sm"
-                rows={1}
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={isLoading || !inputText.trim()}
-                className={`p-2.5 rounded-lg mb-0.5 shrink-0 transition-all ${
-                  isLoading || !inputText.trim() 
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg'
-                }`}
-              >
-                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-              </button>
-            </div>
-            <p className="text-center text-[10px] text-gray-400 mt-2">
+        {/* Input Area (Bottom - only visible when active chat exists) */}
+        {activeProject && activeChat && (
+          <div className="p-4 bg-gray-900 border-t border-gray-800">
+            <InputArea centered={false} />
+            <p className="text-center text-[10px] text-slate-600 mt-2">
               AI agents may produce inaccurate information.
             </p>
           </div>
